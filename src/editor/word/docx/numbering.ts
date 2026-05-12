@@ -1,4 +1,4 @@
-import { ListStyle, ListType } from '../../dataset/enum/List'
+import { ListType } from '../../dataset/enum/List'
 import type { IElement, INumberingFormat } from '../../interface/Element'
 import type { ITd } from '../../interface/table/Td'
 import type { UcDocFile } from '../../ucdoc'
