@@ -1,18 +1,45 @@
 import type { UcDocFile } from '../../ucdoc'
 import { escapeXml } from './xml'
 import { createDocumentXml } from './document'
-import type { DocxPackageFile } from './types'
+import {
+  createImagePackageFiles,
+  createImageRelationMap,
+  createImageRelations
+} from './media'
+import type { DocxImageRelation, DocxPackageFile } from './types'
 
-export function createContentTypesXml(): string {
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>'
+export function createContentTypesXml(
+  imageRelations: DocxImageRelation[] = []
+): string {
+  const imageDefaults = Array.from(
+    new Map(
+      imageRelations.map(relation => [relation.extension, relation.mimeType])
+    ).entries()
+  )
+    .map(
+      ([extension, mimeType]) =>
+        `<Default Extension="${escapeXml(extension)}" ContentType="${escapeXml(mimeType)}"/>`
+    )
+    .join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${imageDefaults}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`
 }
 
 export function createRootRelsXml(): string {
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>'
 }
 
-export function createDocumentRelsXml(): string {
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'
+export function createDocumentRelsXml(
+  imageRelations: DocxImageRelation[] = []
+): string {
+  const imageRels = imageRelations
+    .map(
+      relation =>
+        `<Relationship Id="${escapeXml(relation.relId)}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${escapeXml(relation.target)}"/>`
+    )
+    .join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${imageRels}</Relationships>`
 }
 
 export function createStylesXml(): string {
@@ -33,10 +60,13 @@ export function createAppPropertiesXml(): string {
 }
 
 export function createDocxPackageFiles(doc: UcDocFile): DocxPackageFile[] {
+  const imageRelations = createImageRelations(doc)
+  const imageRelationMap = createImageRelationMap(imageRelations)
+
   return [
     {
       path: '[Content_Types].xml',
-      content: createContentTypesXml()
+      content: createContentTypesXml(imageRelations)
     },
     {
       path: '_rels/.rels',
@@ -52,15 +82,16 @@ export function createDocxPackageFiles(doc: UcDocFile): DocxPackageFile[] {
     },
     {
       path: 'word/_rels/document.xml.rels',
-      content: createDocumentRelsXml()
+      content: createDocumentRelsXml(imageRelations)
     },
     {
       path: 'word/document.xml',
-      content: createDocumentXml(doc)
+      content: createDocumentXml(doc, imageRelationMap)
     },
     {
       path: 'word/styles.xml',
       content: createStylesXml()
-    }
+    },
+    ...createImagePackageFiles(imageRelations)
   ]
 }

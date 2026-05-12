@@ -15,6 +15,10 @@ export function pxToHalfPoint(value: number): number {
   return Math.round(value * 1.5)
 }
 
+export function pxToEmu(value: number): number {
+  return Math.round(value * 9525)
+}
+
 export function colorToHex(value?: string | null): string | null {
   if (!value) return null
   const normalized = value.trim()
