@@ -99,6 +99,7 @@ describe('docx quality export', () => {
             value: '',
             trList: [
               {
+                height: 24,
                 tdList: [
                   {
                     rowspan: 2,
@@ -112,6 +113,7 @@ describe('docx quality export', () => {
                 ]
               },
               {
+                height: 24,
                 tdList: [
                   {
                     rowspan: 0,
