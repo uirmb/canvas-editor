@@ -5,6 +5,7 @@ import { ListStyle, ListType } from '../dataset/enum/List'
 import { RowFlex } from '../dataset/enum/Row'
 import { TitleLevel } from '../dataset/enum/Title'
 import { TableBorder } from '../dataset/enum/table/Table'
+import { VerticalAlign } from '../dataset/enum/VerticalAlign'
 import { IArea } from './Area'
 import { IBlock } from './Block'
 import { ICheckbox } from './Checkbox'
@@ -261,6 +262,57 @@ export interface IWordStyleElement {
   numbering?: INumberingProperties
 }
 
+export type ITableWidthType = 'auto' | 'fixed' | 'percent'
+
+export interface ITableCellMargin {
+  top?: number
+  right?: number
+  bottom?: number
+  left?: number
+}
+
+export interface IWordTableProperties {
+  styleId?: string
+  width?: number
+  widthType?: ITableWidthType
+  layout?: 'auto' | 'fixed'
+  cellMargin?: ITableCellMargin
+  repeatHeaderRow?: boolean
+  allowBreakAcrossPages?: boolean
+  caption?: string
+}
+
+export interface IWordTableCellProperties {
+  verticalAlign?: VerticalAlign
+  backgroundColor?: string
+  cellMargin?: ITableCellMargin
+}
+
+export interface IWordTableElement {
+  tableProperties?: IWordTableProperties
+  tableCellProperties?: IWordTableCellProperties
+}
+
+export type IImageWrapType =
+  | 'inline'
+  | 'square'
+  | 'tight'
+  | 'topAndBottom'
+  | 'behindText'
+  | 'inFrontOfText'
+
+export interface IWordImageProperties {
+  assetId?: string
+  wrapType?: IImageWrapType
+  altText?: string
+  caption?: string
+  lockAspectRatio?: boolean
+}
+
+export interface IWordImageElement {
+  imageProperties?: IWordImageProperties
+}
+
 export type IElement = IElementBasic &
   IElementStyle &
   IElementRule &
@@ -280,7 +332,9 @@ export type IElement = IElementBasic &
   IListElement &
   IAreaElement &
   ILabelElement &
-  IWordStyleElement
+  IWordStyleElement &
+  IWordTableElement &
+  IWordImageElement
 
 export interface IElementMetrics {
   width: number
