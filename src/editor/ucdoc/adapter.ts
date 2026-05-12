@@ -4,6 +4,7 @@ import {
   createDefaultUcDocAssets,
   createDefaultUcDocData,
   createDefaultUcDocMetadata,
+  createDefaultUcDocPageSettings,
   createDefaultUcDocStyles,
   UCDOC_FORMAT,
   UCDOC_VERSION
@@ -39,6 +40,7 @@ function normalizeEditorData(
 
 export function createUcDocFile(options: CreateUcDocOptions = {}): UcDocFile {
   const defaultMetadata = createDefaultUcDocMetadata()
+  const defaultPage = createDefaultUcDocPageSettings()
   const defaultStyles = createDefaultUcDocStyles()
   const defaultAssets = createDefaultUcDocAssets()
 
@@ -49,6 +51,14 @@ export function createUcDocFile(options: CreateUcDocOptions = {}): UcDocFile {
     metadata: {
       ...defaultMetadata,
       ...options.metadata
+    },
+    page: {
+      ...defaultPage,
+      ...options.page,
+      margins: {
+        ...defaultPage.margins,
+        ...options.page?.margins
+      }
     },
     styles: {
       paragraphStyles: {

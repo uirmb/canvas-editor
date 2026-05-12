@@ -11,6 +11,8 @@ export type UcDocAssetType = 'image' | 'attachment'
 
 export type UcDocStyleValue = string | number | boolean | null
 
+export type UcDocPageOrientation = 'portrait' | 'landscape'
+
 export interface UcDocMetadata {
   id?: string
   title?: string
@@ -38,6 +40,23 @@ export interface UcDocAsset {
 export interface UcDocAssetMap {
   images: Record<string, UcDocAsset>
   attachments: Record<string, UcDocAsset>
+}
+
+export interface UcDocPageMargin {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export interface UcDocPageSettings {
+  paperSize?: string
+  width: number
+  height: number
+  orientation: UcDocPageOrientation
+  margins: UcDocPageMargin
+  headerDistance?: number
+  footerDistance?: number
 }
 
 export interface UcDocParagraphStyle {
@@ -70,6 +89,7 @@ export interface UcDocFile {
   version: string
   editorVersion?: string
   metadata: UcDocMetadata
+  page: UcDocPageSettings
   styles: UcDocStyleSheet
   data: IEditorData
   options: IEditorOption
@@ -79,6 +99,7 @@ export interface UcDocFile {
 
 export interface CreateUcDocOptions {
   metadata?: UcDocMetadata
+  page?: Partial<UcDocPageSettings>
   data?: Partial<IEditorData> | IElement[]
   options?: IEditorOption
   styles?: Partial<UcDocStyleSheet>

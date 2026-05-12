@@ -84,6 +84,7 @@ export class UcDocEditorShell {
 
     this.currentDoc = createUcDocFileByEditorResult(editorResult, {
       metadata,
+      page: this.currentDoc.page,
       styles: this.currentDoc.styles,
       assets: this.currentDoc.assets,
       extensions: this.currentDoc.extensions
@@ -107,6 +108,7 @@ export class UcDocEditorShell {
 
     this.currentDoc = createUcDocFileByEditorResult(editorResult, {
       metadata,
+      page: this.currentDoc.page,
       styles: this.currentDoc.styles,
       assets: this.currentDoc.assets,
       extensions: this.currentDoc.extensions

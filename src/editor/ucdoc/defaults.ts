@@ -2,6 +2,7 @@ import type { IEditorData } from '../interface/Editor'
 import type {
   UcDocAssetMap,
   UcDocMetadata,
+  UcDocPageSettings,
   UcDocStyleSheet
 } from './types'
 
@@ -15,6 +16,23 @@ export function createDefaultUcDocMetadata(): UcDocMetadata {
     title: 'Untitled Document',
     createdAt: now,
     updatedAt: now
+  }
+}
+
+export function createDefaultUcDocPageSettings(): UcDocPageSettings {
+  return {
+    paperSize: 'A4',
+    width: 794,
+    height: 1123,
+    orientation: 'portrait',
+    margins: {
+      top: 96,
+      right: 96,
+      bottom: 96,
+      left: 96
+    },
+    headerDistance: 48,
+    footerDistance: 48
   }
 }
 
