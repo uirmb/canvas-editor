@@ -1,5 +1,6 @@
 export * from './document'
 export * from './export'
+export * from './media'
 export * from './package'
 export * from './types'
 export * from './xml'
