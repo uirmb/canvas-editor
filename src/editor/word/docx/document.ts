@@ -5,7 +5,8 @@ import type { IElement } from '../../interface/Element'
 import type { ITd } from '../../interface/table/Td'
 import type { ITr } from '../../interface/table/Tr'
 import type { UcDocFile } from '../../ucdoc'
-import { colorToHex, escapeXml, pxToHalfPoint, pxToTwip } from './xml'
+import type { DocxImageRelationMap } from './types'
+import { colorToHex, escapeXml, pxToEmu, pxToHalfPoint, pxToTwip } from './xml'
 
 function getTextElementList(doc: UcDocFile): IElement[] {
   return doc.data.main || []
@@ -35,7 +36,7 @@ function splitParagraphs(elementList: IElement[]): IElement[][] {
         paragraphs.push(current)
         current = []
       }
-      if (part || element.type === ElementType.PAGE_BREAK) {
+      if (part || element.type === ElementType.PAGE_BREAK || element.type === ElementType.IMAGE) {
         current.push({
           ...element,
           value: part
@@ -131,22 +132,55 @@ function createParagraphProperties(paragraph: IElement[]): string {
   return properties.length ? `<w:pPr>${properties.join('')}</w:pPr>` : ''
 }
 
-function createRun(element: IElement): string {
+function getImageAssetId(element: IElement): string | undefined {
+  return element.imageProperties?.assetId || element.externalId || element.id
+}
+
+function createImageDrawing(element: IElement, imageRelations: DocxImageRelationMap): string {
+  const assetId = getImageAssetId(element)
+  const relation = assetId ? imageRelations[assetId] : undefined
+  if (!relation) return ''
+
+  const width = element.width || relation.width
+  const height = element.height || relation.height
+  const cx = pxToEmu(width)
+  const cy = pxToEmu(height)
+  const description = escapeXml(element.imageProperties?.altText || relation.fileName)
+  const name = escapeXml(element.imageProperties?.caption || relation.fileName)
+
+  return `<w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="${name}" descr="${description}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="${name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${escapeXml(relation.relId)}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`
+}
+
+function createRun(
+  element: IElement,
+  imageRelations: DocxImageRelationMap = {}
+): string {
   if (element.type === ElementType.PAGE_BREAK) {
     return '<w:r><w:br w:type="page"/></w:r>'
+  }
+  if (element.type === ElementType.IMAGE) {
+    return `<w:r>${createImageDrawing(element, imageRelations)}</w:r>`
   }
   return `<w:r>${createRunProperties(element)}<w:t xml:space="preserve">${escapeXml(element.value || '')}</w:t></w:r>`
 }
 
-function createParagraph(paragraph: IElement[]): string {
+function createParagraph(
+  paragraph: IElement[],
+  imageRelations: DocxImageRelationMap = {}
+): string {
   if (!paragraph.length) {
     return '<w:p/>'
   }
-  return `<w:p>${createParagraphProperties(paragraph)}${paragraph.map(createRun).join('')}</w:p>`
+  return `<w:p>${createParagraphProperties(paragraph)}${paragraph.map(element => createRun(element, imageRelations)).join('')}</w:p>`
 }
 
-function createParagraphs(elementList: IElement[]): string {
-  return splitParagraphs(elementList).map(createParagraph).join('')
+function createParagraphs(
+  elementList: IElement[],
+  imageRelations: DocxImageRelationMap = {}
+): string {
+  return splitParagraphs(elementList)
+    .map(paragraph => createParagraph(paragraph, imageRelations))
+    .join('')
 }
 
 function createTableGrid(table: IElement): string {
@@ -209,12 +243,18 @@ function createTableCellProperties(td: ITd): string {
   return properties.length ? `<w:tcPr>${properties.join('')}</w:tcPr>` : ''
 }
 
-function createTableCell(td: ITd): string {
-  const content = createParagraphs(td.value || []) || '<w:p/>'
+function createTableCell(
+  td: ITd,
+  imageRelations: DocxImageRelationMap = {}
+): string {
+  const content = createParagraphs(td.value || [], imageRelations) || '<w:p/>'
   return `<w:tc>${createTableCellProperties(td)}${content}</w:tc>`
 }
 
-function createTableRow(row: ITr): string {
+function createTableRow(
+  row: ITr,
+  imageRelations: DocxImageRelationMap = {}
+): string {
   const rowProperties: string[] = []
   if (row.height) {
     rowProperties.push(`<w:trHeight w:val="${pxToTwip(row.height)}"/>`)
@@ -222,28 +262,34 @@ function createTableRow(row: ITr): string {
   if (row.pagingRepeat) {
     rowProperties.push('<w:tblHeader/>')
   }
-  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(createTableCell).join('')}</w:tr>`
+  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(td => createTableCell(td, imageRelations)).join('')}</w:tr>`
 }
 
-function createTable(table: IElement): string {
+function createTable(
+  table: IElement,
+  imageRelations: DocxImageRelationMap = {}
+): string {
   if (!table.trList?.length) return '<w:p/>'
-  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(createTableRow).join('')}</w:tbl>`
+  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(row => createTableRow(row, imageRelations)).join('')}</w:tbl>`
 }
 
-function createDocumentBlocks(elementList: IElement[]): string {
+function createDocumentBlocks(
+  elementList: IElement[],
+  imageRelations: DocxImageRelationMap = {}
+): string {
   const blocks: string[] = []
   let paragraphBuffer: IElement[] = []
 
   const flushParagraphBuffer = () => {
     if (!paragraphBuffer.length) return
-    blocks.push(createParagraphs(paragraphBuffer))
+    blocks.push(createParagraphs(paragraphBuffer, imageRelations))
     paragraphBuffer = []
   }
 
   elementList.forEach(element => {
     if (element.type === ElementType.TABLE) {
       flushParagraphBuffer()
-      blocks.push(createTable(element))
+      blocks.push(createTable(element, imageRelations))
       return
     }
     paragraphBuffer.push(element)
@@ -258,8 +304,11 @@ function createSectionProperties(doc: UcDocFile): string {
   return `<w:sectPr><w:pgSz w:w="${pxToTwip(page.width)}" w:h="${pxToTwip(page.height)}" w:orient="${page.orientation}"/><w:pgMar w:top="${pxToTwip(page.margins.top)}" w:right="${pxToTwip(page.margins.right)}" w:bottom="${pxToTwip(page.margins.bottom)}" w:left="${pxToTwip(page.margins.left)}" w:header="${pxToTwip(page.headerDistance || 0)}" w:footer="${pxToTwip(page.footerDistance || 0)}" w:gutter="0"/></w:sectPr>`
 }
 
-export function createDocumentXml(doc: UcDocFile): string {
-  const blocks = createDocumentBlocks(getTextElementList(doc))
+export function createDocumentXml(
+  doc: UcDocFile,
+  imageRelations: DocxImageRelationMap = {}
+): string {
+  const blocks = createDocumentBlocks(getTextElementList(doc), imageRelations)
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${blocks}${createSectionProperties(doc)}</w:body></w:document>`
 }
