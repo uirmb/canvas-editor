@@ -23,12 +23,18 @@ function normalizeEditorData(
       footer: []
     }
   }
-  return {
+
+  const normalizedData: IEditorData = {
     header: data.header || [],
     main: data.main || [],
-    footer: data.footer || [],
-    graffiti: data.graffiti || []
+    footer: data.footer || []
   }
+
+  if (data.graffiti) {
+    normalizedData.graffiti = data.graffiti
+  }
+
+  return normalizedData
 }
 
 export function createUcDocFile(options: CreateUcDocOptions = {}): UcDocFile {
