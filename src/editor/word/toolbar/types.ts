@@ -1,6 +1,10 @@
 import type { ListStyle, ListType } from '../../dataset/enum/List'
 import type { RowFlex } from '../../dataset/enum/Row'
 import type { TitleLevel } from '../../dataset/enum/Title'
+import type {
+  INumberingProperties,
+  IParagraphProperties
+} from '../../interface/Element'
 import type { IRangeStyle } from '../../interface/Listener'
 
 export type WordToolbarStateChange = (state: WordToolbarState) => void
@@ -58,3 +62,7 @@ export interface WordToolbarTablePayload {
   row: number
   col: number
 }
+
+export type WordToolbarParagraphPayload = IParagraphProperties
+
+export type WordToolbarNumberingPayload = INumberingProperties | null
