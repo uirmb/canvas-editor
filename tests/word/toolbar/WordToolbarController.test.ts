@@ -54,6 +54,9 @@ function createEditor(): WordToolbarEditorLike & {
       executeColor: vi.fn(),
       executeHighlight: vi.fn(),
       executeTitle: vi.fn(),
+      executeParagraphStyle: vi.fn(),
+      executeParagraph: vi.fn(),
+      executeNumbering: vi.fn(),
       executeRowFlex: vi.fn(),
       executeRowMargin: vi.fn(),
       executeList: vi.fn(),
@@ -121,6 +124,45 @@ describe('WordToolbarController', () => {
       ListType.OL,
       ListStyle.DECIMAL
     )
+  })
+
+  it('forwards paragraph model commands', () => {
+    const editor = createEditor()
+    const controller = new WordToolbarController(editor)
+
+    controller.setParagraphStyle('heading1')
+    controller.setParagraph({
+      align: 'justify',
+      indent: {
+        firstLine: 24
+      },
+      spacing: {
+        before: 6,
+        after: 8
+      }
+    })
+    controller.setNumbering({
+      numId: 'num-1',
+      level: 1,
+      format: 'decimal'
+    })
+
+    expect(editor.command.executeParagraphStyle).toHaveBeenCalledWith('heading1')
+    expect(editor.command.executeParagraph).toHaveBeenCalledWith({
+      align: 'justify',
+      indent: {
+        firstLine: 24
+      },
+      spacing: {
+        before: 6,
+        after: 8
+      }
+    })
+    expect(editor.command.executeNumbering).toHaveBeenCalledWith({
+      numId: 'num-1',
+      level: 1,
+      format: 'decimal'
+    })
   })
 
   it('forwards insert and print commands', () => {
