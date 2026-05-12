@@ -1,7 +1,13 @@
 import { DOCX_MIME_TYPE, type DocxExportResult } from './types'
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(buffer).set(bytes)
+  return buffer
+}
+
 export function createDocxBlob(result: DocxExportResult): Blob {
-  return new Blob([result.data], {
+  return new Blob([toArrayBuffer(result.data)], {
     type: result.mimeType || DOCX_MIME_TYPE
   })
 }
