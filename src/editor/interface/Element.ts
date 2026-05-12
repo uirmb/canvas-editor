@@ -192,6 +192,75 @@ export interface ILabelElement {
   }
 }
 
+export type IParagraphAlign =
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'justify'
+  | 'distribute'
+
+export type IParagraphLineRule = 'auto' | 'exact' | 'atLeast'
+
+export type IParagraphTabAlign = 'left' | 'center' | 'right' | 'decimal'
+
+export type IParagraphTabLeader = 'none' | 'dot' | 'dash' | 'underline'
+
+export interface IParagraphIndent {
+  left?: number
+  right?: number
+  firstLine?: number
+  hanging?: number
+}
+
+export interface IParagraphSpacing {
+  before?: number
+  after?: number
+  line?: number
+  lineRule?: IParagraphLineRule
+}
+
+export interface IParagraphTab {
+  position: number
+  align?: IParagraphTabAlign
+  leader?: IParagraphTabLeader
+}
+
+export interface IParagraphProperties {
+  styleId?: string
+  align?: IParagraphAlign
+  indent?: IParagraphIndent
+  spacing?: IParagraphSpacing
+  tabs?: IParagraphTab[]
+  keepNext?: boolean
+  keepLines?: boolean
+  pageBreakBefore?: boolean
+}
+
+export type INumberingFormat =
+  | 'decimal'
+  | 'bullet'
+  | 'lowerLetter'
+  | 'upperLetter'
+  | 'lowerRoman'
+  | 'upperRoman'
+
+export interface INumberingProperties {
+  numId: string
+  level: number
+  abstractNumId?: string
+  format?: INumberingFormat
+  text?: string
+  start?: number
+  restart?: boolean
+}
+
+export interface IWordStyleElement {
+  paragraph?: IParagraphProperties
+  styleId?: string
+  characterStyleId?: string
+  numbering?: INumberingProperties
+}
+
 export type IElement = IElementBasic &
   IElementStyle &
   IElementRule &
@@ -210,7 +279,8 @@ export type IElement = IElementBasic &
   ITitleElement &
   IListElement &
   IAreaElement &
-  ILabelElement
+  ILabelElement &
+  IWordStyleElement
 
 export interface IElementMetrics {
   width: number
