@@ -1,3 +1,5 @@
+import type { RowFlex } from '../../dataset/enum/Row'
+import type { TitleLevel } from '../../dataset/enum/Title'
 import type { IElement } from '../../interface/Element'
 import type { IRangeStyle } from '../../interface/Listener'
 import type {
@@ -125,11 +127,11 @@ export class WordToolbarController {
     this.call('executeHighlight', color)
   }
 
-  public setTitle(level: number | null): void {
+  public setTitle(level: TitleLevel | null): void {
     this.call('executeTitle', level)
   }
 
-  public setRowFlex(rowFlex: unknown): void {
+  public setRowFlex(rowFlex: RowFlex): void {
     this.call('executeRowFlex', rowFlex)
   }
 
