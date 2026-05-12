@@ -240,3 +240,5 @@ export type {
   IBadge,
   IGetElementListByHTMLOption
 }
+
+export * from './ucdoc'
