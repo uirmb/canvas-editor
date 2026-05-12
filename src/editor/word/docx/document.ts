@@ -1,4 +1,3 @@
-import { ImageDisplay } from '../../dataset/enum/Common'
 import { ElementType } from '../../dataset/enum/Element'
 import { RowFlex } from '../../dataset/enum/Row'
 import { VerticalAlign } from '../../dataset/enum/VerticalAlign'
