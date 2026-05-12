@@ -7,6 +7,8 @@ import type {
   WordToolbarControllerOptions,
   WordToolbarEditorLike,
   WordToolbarListPayload,
+  WordToolbarNumberingPayload,
+  WordToolbarParagraphPayload,
   WordToolbarState,
   WordToolbarTablePayload
 } from './types'
@@ -129,6 +131,18 @@ export class WordToolbarController {
 
   public setTitle(level: TitleLevel | null): void {
     this.call('executeTitle', level)
+  }
+
+  public setParagraphStyle(styleId: string | null): void {
+    this.call('executeParagraphStyle', styleId)
+  }
+
+  public setParagraph(payload: WordToolbarParagraphPayload): void {
+    this.call('executeParagraph', payload)
+  }
+
+  public setNumbering(payload: WordToolbarNumberingPayload): void {
+    this.call('executeNumbering', payload)
   }
 
   public setRowFlex(rowFlex: RowFlex): void {
