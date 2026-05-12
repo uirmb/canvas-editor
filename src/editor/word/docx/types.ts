@@ -23,3 +23,18 @@ export interface DocxExportContext {
   doc: UcDocFile
   options: Required<DocxExportOptions>
 }
+
+export interface DocxImageRelation {
+  assetId: string
+  relId: string
+  target: string
+  path: string
+  fileName: string
+  extension: string
+  mimeType: string
+  width: number
+  height: number
+  data: Uint8Array
+}
+
+export type DocxImageRelationMap = Record<string, DocxImageRelation>
