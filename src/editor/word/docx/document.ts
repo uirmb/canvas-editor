@@ -6,8 +6,19 @@ import type { ITd } from '../../interface/table/Td'
 import type { ITr } from '../../interface/table/Tr'
 import type { UcDocFile } from '../../ucdoc'
 import { getNumberingReference } from './numbering'
-import type { DocxImageRelationMap, DocxNumberingMap } from './types'
+import type {
+  DocxHeaderFooterRelation,
+  DocxHyperlinkRelationMap,
+  DocxImageRelationMap,
+  DocxNumberingMap
+} from './types'
 import { colorToHex, escapeXml, pxToEmu, pxToHalfPoint, pxToTwip } from './xml'
+
+interface DocxRenderContext {
+  imageRelations?: DocxImageRelationMap
+  numberingMap?: DocxNumberingMap
+  hyperlinkRelations?: DocxHyperlinkRelationMap
+}
 
 function getTextElementList(doc: UcDocFile): IElement[] {
   return doc.data.main || []
@@ -104,7 +115,7 @@ function verticalAlignToDocx(value?: VerticalAlign): string | null {
 
 function createParagraphProperties(
   paragraph: IElement[],
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   const first = paragraph[0]
   if (!first) return ''
@@ -113,7 +124,7 @@ function createParagraphProperties(
   const paragraphModel = first.paragraph
   const styleId = first.styleId || paragraphModel?.styleId
   const jc = paragraphModel?.align || rowFlexToJc(first.rowFlex)
-  const numberingReference = getNumberingReference(first, numberingMap)
+  const numberingReference = getNumberingReference(first, context.numberingMap || {})
 
   if (styleId) {
     properties.push(`<w:pStyle w:val="${escapeXml(styleId)}"/>`)
@@ -161,35 +172,51 @@ function createImageDrawing(element: IElement, imageRelations: DocxImageRelation
 
 function createRun(
   element: IElement,
-  imageRelations: DocxImageRelationMap = {}
+  context: DocxRenderContext = {}
 ): string {
   if (element.type === ElementType.PAGE_BREAK) {
     return '<w:r><w:br w:type="page"/></w:r>'
   }
   if (element.type === ElementType.IMAGE) {
-    return `<w:r>${createImageDrawing(element, imageRelations)}</w:r>`
+    return `<w:r>${createImageDrawing(element, context.imageRelations || {})}</w:r>`
   }
   return `<w:r>${createRunProperties(element)}<w:t xml:space="preserve">${escapeXml(element.value || '')}</w:t></w:r>`
 }
 
+function createHyperlink(element: IElement, context: DocxRenderContext): string | null {
+  const url = element.url
+  if (!url) return null
+  const relation = context.hyperlinkRelations?.[url]
+  if (!relation) return null
+  const children = element.valueList?.length
+    ? element.valueList.map(child => createRun(child, context)).join('')
+    : createRun({ ...element, type: ElementType.TEXT }, context)
+  return `<w:hyperlink r:id="${escapeXml(relation.relId)}" w:history="1">${children}</w:hyperlink>`
+}
+
 function createParagraph(
   paragraph: IElement[],
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   if (!paragraph.length) {
     return '<w:p/>'
   }
-  return `<w:p>${createParagraphProperties(paragraph, numberingMap)}${paragraph.map(element => createRun(element, imageRelations)).join('')}</w:p>`
+  return `<w:p>${createParagraphProperties(paragraph, context)}${paragraph
+    .map(element => {
+      if (element.type === ElementType.HYPERLINK || element.url) {
+        return createHyperlink(element, context) || createRun(element, context)
+      }
+      return createRun(element, context)
+    })
+    .join('')}</w:p>`
 }
 
 function createParagraphs(
   elementList: IElement[],
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   return splitParagraphs(elementList)
-    .map(paragraph => createParagraph(paragraph, imageRelations, numberingMap))
+    .map(paragraph => createParagraph(paragraph, context))
     .join('')
 }
 
@@ -242,6 +269,8 @@ function createTableCellProperties(td: ITd): string {
   }
   if (td.rowspan > 1) {
     properties.push('<w:vMerge w:val="restart"/>')
+  } else if (td.rowspan === 0) {
+    properties.push('<w:vMerge/>')
   }
   if (verticalAlign) {
     properties.push(`<w:vAlign w:val="${verticalAlign}"/>`)
@@ -255,17 +284,15 @@ function createTableCellProperties(td: ITd): string {
 
 function createTableCell(
   td: ITd,
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
-  const content = createParagraphs(td.value || [], imageRelations, numberingMap) || '<w:p/>'
+  const content = createParagraphs(td.value || [], context) || '<w:p/>'
   return `<w:tc>${createTableCellProperties(td)}${content}</w:tc>`
 }
 
 function createTableRow(
   row: ITr,
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   const rowProperties: string[] = []
   if (row.height) {
@@ -274,36 +301,34 @@ function createTableRow(
   if (row.pagingRepeat) {
     rowProperties.push('<w:tblHeader/>')
   }
-  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(td => createTableCell(td, imageRelations, numberingMap)).join('')}</w:tr>`
+  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(td => createTableCell(td, context)).join('')}</w:tr>`
 }
 
 function createTable(
   table: IElement,
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   if (!table.trList?.length) return '<w:p/>'
-  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(row => createTableRow(row, imageRelations, numberingMap)).join('')}</w:tbl>`
+  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(row => createTableRow(row, context)).join('')}</w:tbl>`
 }
 
 function createDocumentBlocks(
   elementList: IElement[],
-  imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  context: DocxRenderContext = {}
 ): string {
   const blocks: string[] = []
   let paragraphBuffer: IElement[] = []
 
   const flushParagraphBuffer = () => {
     if (!paragraphBuffer.length) return
-    blocks.push(createParagraphs(paragraphBuffer, imageRelations, numberingMap))
+    blocks.push(createParagraphs(paragraphBuffer, context))
     paragraphBuffer = []
   }
 
   elementList.forEach(element => {
     if (element.type === ElementType.TABLE) {
       flushParagraphBuffer()
-      blocks.push(createTable(element, imageRelations, numberingMap))
+      blocks.push(createTable(element, context))
       return
     }
     paragraphBuffer.push(element)
@@ -313,17 +338,47 @@ function createDocumentBlocks(
   return blocks.join('')
 }
 
-function createSectionProperties(doc: UcDocFile): string {
+function createSectionProperties(
+  doc: UcDocFile,
+  headerFooterRelations: DocxHeaderFooterRelation[] = []
+): string {
   const page = doc.page
-  return `<w:sectPr><w:pgSz w:w="${pxToTwip(page.width)}" w:h="${pxToTwip(page.height)}" w:orient="${page.orientation}"/><w:pgMar w:top="${pxToTwip(page.margins.top)}" w:right="${pxToTwip(page.margins.right)}" w:bottom="${pxToTwip(page.margins.bottom)}" w:left="${pxToTwip(page.margins.left)}" w:header="${pxToTwip(page.headerDistance || 0)}" w:footer="${pxToTwip(page.footerDistance || 0)}" w:gutter="0"/></w:sectPr>`
+  const headerFooterRefs = headerFooterRelations
+    .map(relation =>
+      relation.type === 'header'
+        ? `<w:headerReference w:type="default" r:id="${escapeXml(relation.relId)}"/>`
+        : `<w:footerReference w:type="default" r:id="${escapeXml(relation.relId)}"/>`
+    )
+    .join('')
+  return `<w:sectPr>${headerFooterRefs}<w:pgSz w:w="${pxToTwip(page.width)}" w:h="${pxToTwip(page.height)}" w:orient="${page.orientation}"/><w:pgMar w:top="${pxToTwip(page.margins.top)}" w:right="${pxToTwip(page.margins.right)}" w:bottom="${pxToTwip(page.margins.bottom)}" w:left="${pxToTwip(page.margins.left)}" w:header="${pxToTwip(page.headerDistance || 0)}" w:footer="${pxToTwip(page.footerDistance || 0)}" w:gutter="0"/></w:sectPr>`
 }
 
 export function createDocumentXml(
   doc: UcDocFile,
   imageRelations: DocxImageRelationMap = {},
-  numberingMap: DocxNumberingMap = {}
+  numberingMap: DocxNumberingMap = {},
+  hyperlinkRelations: DocxHyperlinkRelationMap = {},
+  headerFooterRelations: DocxHeaderFooterRelation[] = []
 ): string {
-  const blocks = createDocumentBlocks(getTextElementList(doc), imageRelations, numberingMap)
+  const blocks = createDocumentBlocks(getTextElementList(doc), {
+    imageRelations,
+    numberingMap,
+    hyperlinkRelations
+  })
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${blocks}${createSectionProperties(doc)}</w:body></w:document>`
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${blocks}${createSectionProperties(doc, headerFooterRelations)}</w:body></w:document>`
+}
+
+export function createHeaderXml(
+  elementList: IElement[],
+  context: DocxRenderContext = {}
+): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${createDocumentBlocks(elementList, context) || '<w:p/>'}</w:hdr>`
+}
+
+export function createFooterXml(
+  elementList: IElement[],
+  context: DocxRenderContext = {}
+): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${createDocumentBlocks(elementList, context) || '<w:p/>'}</w:ftr>`
 }

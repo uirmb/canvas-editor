@@ -1,5 +1,7 @@
+export * from './browser'
 export * from './document'
 export * from './export'
+export * from './hyperlink'
 export * from './media'
 export * from './numbering'
 export * from './package'

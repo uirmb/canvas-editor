@@ -59,3 +59,17 @@ export interface DocxNumberingReference {
   numId: number
   level: number
 }
+
+export interface DocxHyperlinkRelation {
+  url: string
+  relId: string
+}
+
+export type DocxHyperlinkRelationMap = Record<string, DocxHyperlinkRelation>
+
+export interface DocxHeaderFooterRelation {
+  type: 'header' | 'footer'
+  relId: string
+  target: string
+  path: string
+}
