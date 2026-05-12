@@ -27,9 +27,7 @@ export class UcDocEditorShell {
     this.onSave = options.onSave
     this.currentDoc = options.initialDoc
       ? migrateUcDocFile(options.initialDoc)
-      : createUcDocFileByEditorResult(editor.command.getValue(), {
-          editorVersion: editor.version
-        })
+      : createUcDocFileByEditorResult(editor.command.getValue())
 
     this.originalContentChange = editor.listener?.contentChange || undefined
 
@@ -88,8 +86,7 @@ export class UcDocEditorShell {
       metadata,
       styles: this.currentDoc.styles,
       assets: this.currentDoc.assets,
-      extensions: this.currentDoc.extensions,
-      editorVersion: this.editor.version
+      extensions: this.currentDoc.extensions
     })
 
     return this.currentDoc
@@ -112,8 +109,7 @@ export class UcDocEditorShell {
       metadata,
       styles: this.currentDoc.styles,
       assets: this.currentDoc.assets,
-      extensions: this.currentDoc.extensions,
-      editorVersion: this.editor.version
+      extensions: this.currentDoc.extensions
     })
 
     return this.currentDoc
