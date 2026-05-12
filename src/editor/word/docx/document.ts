@@ -1,6 +1,10 @@
+import { ImageDisplay } from '../../dataset/enum/Common'
 import { ElementType } from '../../dataset/enum/Element'
 import { RowFlex } from '../../dataset/enum/Row'
+import { VerticalAlign } from '../../dataset/enum/VerticalAlign'
 import type { IElement } from '../../interface/Element'
+import type { ITd } from '../../interface/table/Td'
+import type { ITr } from '../../interface/table/Tr'
 import type { UcDocFile } from '../../ucdoc'
 import { colorToHex, escapeXml, pxToHalfPoint, pxToTwip } from './xml'
 
@@ -13,6 +17,13 @@ function splitParagraphs(elementList: IElement[]): IElement[][] {
   let current: IElement[] = []
 
   elementList.forEach(element => {
+    if (element.type === ElementType.TABLE) {
+      if (current.length) {
+        paragraphs.push(current)
+        current = []
+      }
+      return
+    }
     if (element.value === '\n') {
       paragraphs.push(current)
       current = []
@@ -77,6 +88,19 @@ function rowFlexToJc(rowFlex?: RowFlex): string | null {
   }
 }
 
+function verticalAlignToDocx(value?: VerticalAlign): string | null {
+  switch (value) {
+    case VerticalAlign.MIDDLE:
+      return 'center'
+    case VerticalAlign.BOTTOM:
+      return 'bottom'
+    case VerticalAlign.TOP:
+      return 'top'
+    default:
+      return null
+  }
+}
+
 function createParagraphProperties(paragraph: IElement[]): string {
   const first = paragraph[0]
   if (!first) return ''
@@ -122,13 +146,121 @@ function createParagraph(paragraph: IElement[]): string {
   return `<w:p>${createParagraphProperties(paragraph)}${paragraph.map(createRun).join('')}</w:p>`
 }
 
+function createParagraphs(elementList: IElement[]): string {
+  return splitParagraphs(elementList).map(createParagraph).join('')
+}
+
+function createTableGrid(table: IElement): string {
+  if (!table.colgroup?.length) return ''
+  const columns = table.colgroup
+    .map(col => `<w:gridCol w:w="${pxToTwip(col.width)}"/>`)
+    .join('')
+  return `<w:tblGrid>${columns}</w:tblGrid>`
+}
+
+function createTableProperties(table: IElement): string {
+  const properties: string[] = []
+  const tableProperties = table.tableProperties
+  const width = tableProperties?.width
+  const widthType = tableProperties?.widthType || 'auto'
+
+  properties.push('<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tblBorders>')
+
+  if (tableProperties?.styleId) {
+    properties.unshift(`<w:tblStyle w:val="${escapeXml(tableProperties.styleId)}"/>`)
+  }
+  if (width !== undefined) {
+    properties.push(
+      `<w:tblW w:w="${widthType === 'percent' ? Math.round(width * 50) : pxToTwip(width)}" w:type="${widthType === 'percent' ? 'pct' : 'dxa'}"/>`
+    )
+  }
+  if (tableProperties?.layout === 'fixed') {
+    properties.push('<w:tblLayout w:type="fixed"/>')
+  }
+
+  return `<w:tblPr>${properties.join('')}</w:tblPr>`
+}
+
+function createTableCellProperties(td: ITd): string {
+  const properties: string[] = []
+  const cellProperties = td.value?.[0]?.tableCellProperties
+  const verticalAlign = verticalAlignToDocx(
+    cellProperties?.verticalAlign || td.verticalAlign
+  )
+  const backgroundColor = colorToHex(
+    cellProperties?.backgroundColor || td.backgroundColor
+  )
+
+  if (td.width) {
+    properties.push(`<w:tcW w:w="${pxToTwip(td.width)}" w:type="dxa"/>`)
+  }
+  if (td.colspan > 1) {
+    properties.push(`<w:gridSpan w:val="${td.colspan}"/>`)
+  }
+  if (td.rowspan > 1) {
+    properties.push('<w:vMerge w:val="restart"/>')
+  }
+  if (verticalAlign) {
+    properties.push(`<w:vAlign w:val="${verticalAlign}"/>`)
+  }
+  if (backgroundColor) {
+    properties.push(`<w:shd w:fill="${backgroundColor}"/>`)
+  }
+
+  return properties.length ? `<w:tcPr>${properties.join('')}</w:tcPr>` : ''
+}
+
+function createTableCell(td: ITd): string {
+  const content = createParagraphs(td.value || []) || '<w:p/>'
+  return `<w:tc>${createTableCellProperties(td)}${content}</w:tc>`
+}
+
+function createTableRow(row: ITr): string {
+  const rowProperties: string[] = []
+  if (row.height) {
+    rowProperties.push(`<w:trHeight w:val="${pxToTwip(row.height)}"/>`)
+  }
+  if (row.pagingRepeat) {
+    rowProperties.push('<w:tblHeader/>')
+  }
+  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(createTableCell).join('')}</w:tr>`
+}
+
+function createTable(table: IElement): string {
+  if (!table.trList?.length) return '<w:p/>'
+  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(createTableRow).join('')}</w:tbl>`
+}
+
+function createDocumentBlocks(elementList: IElement[]): string {
+  const blocks: string[] = []
+  let paragraphBuffer: IElement[] = []
+
+  const flushParagraphBuffer = () => {
+    if (!paragraphBuffer.length) return
+    blocks.push(createParagraphs(paragraphBuffer))
+    paragraphBuffer = []
+  }
+
+  elementList.forEach(element => {
+    if (element.type === ElementType.TABLE) {
+      flushParagraphBuffer()
+      blocks.push(createTable(element))
+      return
+    }
+    paragraphBuffer.push(element)
+  })
+
+  flushParagraphBuffer()
+  return blocks.join('')
+}
+
 function createSectionProperties(doc: UcDocFile): string {
   const page = doc.page
   return `<w:sectPr><w:pgSz w:w="${pxToTwip(page.width)}" w:h="${pxToTwip(page.height)}" w:orient="${page.orientation}"/><w:pgMar w:top="${pxToTwip(page.margins.top)}" w:right="${pxToTwip(page.margins.right)}" w:bottom="${pxToTwip(page.margins.bottom)}" w:left="${pxToTwip(page.margins.left)}" w:header="${pxToTwip(page.headerDistance || 0)}" w:footer="${pxToTwip(page.footerDistance || 0)}" w:gutter="0"/></w:sectPr>`
 }
 
 export function createDocumentXml(doc: UcDocFile): string {
-  const paragraphs = splitParagraphs(getTextElementList(doc)).map(createParagraph)
+  const blocks = createDocumentBlocks(getTextElementList(doc))
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs.join('')}${createSectionProperties(doc)}</w:body></w:document>`
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${blocks}${createSectionProperties(doc)}</w:body></w:document>`
 }
