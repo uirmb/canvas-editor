@@ -59,6 +59,13 @@ export interface UcDocPageSettings {
   footerDistance?: number
 }
 
+export type UcDocPageSettingsInput = Omit<
+  Partial<UcDocPageSettings>,
+  'margins'
+> & {
+  margins?: Partial<UcDocPageMargin>
+}
+
 export interface UcDocParagraphStyle {
   name: string
   basedOn?: string
@@ -99,7 +106,7 @@ export interface UcDocFile {
 
 export interface CreateUcDocOptions {
   metadata?: UcDocMetadata
-  page?: Partial<UcDocPageSettings>
+  page?: UcDocPageSettingsInput
   data?: Partial<IEditorData> | IElement[]
   options?: IEditorOption
   styles?: Partial<UcDocStyleSheet>

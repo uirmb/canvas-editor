@@ -1,10 +1,11 @@
 import {
   createDefaultUcDocPageSettings,
-  type UcDocPageSettings
+  type UcDocPageSettings,
+  type UcDocPageSettingsInput
 } from '../ucdoc'
 
 export function createPageSettings(
-  settings: Partial<UcDocPageSettings> = {}
+  settings: UcDocPageSettingsInput = {}
 ): UcDocPageSettings {
   const defaultSettings = createDefaultUcDocPageSettings()
   return {
