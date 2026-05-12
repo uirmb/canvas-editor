@@ -38,3 +38,24 @@ export interface DocxImageRelation {
 }
 
 export type DocxImageRelationMap = Record<string, DocxImageRelation>
+
+export interface DocxNumberingLevel {
+  level: number
+  format: string
+  text: string
+  start: number
+}
+
+export interface DocxNumberingDefinition {
+  sourceId: string
+  docxNumId: number
+  abstractNumId: number
+  levels: DocxNumberingLevel[]
+}
+
+export type DocxNumberingMap = Record<string, DocxNumberingDefinition>
+
+export interface DocxNumberingReference {
+  numId: number
+  level: number
+}

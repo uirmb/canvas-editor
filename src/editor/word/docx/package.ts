@@ -6,10 +6,16 @@ import {
   createImageRelationMap,
   createImageRelations
 } from './media'
+import {
+  createNumberingDefinitions,
+  createNumberingMap,
+  createNumberingXml
+} from './numbering'
 import type { DocxImageRelation, DocxPackageFile } from './types'
 
 export function createContentTypesXml(
-  imageRelations: DocxImageRelation[] = []
+  imageRelations: DocxImageRelation[] = [],
+  hasNumbering = false
 ): string {
   const imageDefaults = Array.from(
     new Map(
@@ -21,8 +27,11 @@ export function createContentTypesXml(
         `<Default Extension="${escapeXml(extension)}" ContentType="${escapeXml(mimeType)}"/>`
     )
     .join('')
+  const numberingOverride = hasNumbering
+    ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
+    : ''
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${imageDefaults}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${imageDefaults}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>${numberingOverride}<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`
 }
 
 export function createRootRelsXml(): string {
@@ -30,7 +39,8 @@ export function createRootRelsXml(): string {
 }
 
 export function createDocumentRelsXml(
-  imageRelations: DocxImageRelation[] = []
+  imageRelations: DocxImageRelation[] = [],
+  hasNumbering = false
 ): string {
   const imageRels = imageRelations
     .map(
@@ -38,8 +48,11 @@ export function createDocumentRelsXml(
         `<Relationship Id="${escapeXml(relation.relId)}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${escapeXml(relation.target)}"/>`
     )
     .join('')
+  const numberingRel = hasNumbering
+    ? '<Relationship Id="rIdNumbering" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>'
+    : ''
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${imageRels}</Relationships>`
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${numberingRel}${imageRels}</Relationships>`
 }
 
 export function createStylesXml(): string {
@@ -62,11 +75,14 @@ export function createAppPropertiesXml(): string {
 export function createDocxPackageFiles(doc: UcDocFile): DocxPackageFile[] {
   const imageRelations = createImageRelations(doc)
   const imageRelationMap = createImageRelationMap(imageRelations)
+  const numberingDefinitions = createNumberingDefinitions(doc)
+  const numberingMap = createNumberingMap(numberingDefinitions)
+  const hasNumbering = numberingDefinitions.length > 0
 
   return [
     {
       path: '[Content_Types].xml',
-      content: createContentTypesXml(imageRelations)
+      content: createContentTypesXml(imageRelations, hasNumbering)
     },
     {
       path: '_rels/.rels',
@@ -82,16 +98,24 @@ export function createDocxPackageFiles(doc: UcDocFile): DocxPackageFile[] {
     },
     {
       path: 'word/_rels/document.xml.rels',
-      content: createDocumentRelsXml(imageRelations)
+      content: createDocumentRelsXml(imageRelations, hasNumbering)
     },
     {
       path: 'word/document.xml',
-      content: createDocumentXml(doc, imageRelationMap)
+      content: createDocumentXml(doc, imageRelationMap, numberingMap)
     },
     {
       path: 'word/styles.xml',
       content: createStylesXml()
     },
+    ...(hasNumbering
+      ? [
+          {
+            path: 'word/numbering.xml',
+            content: createNumberingXml(numberingDefinitions)
+          }
+        ]
+      : []),
     ...createImagePackageFiles(imageRelations)
   ]
 }
