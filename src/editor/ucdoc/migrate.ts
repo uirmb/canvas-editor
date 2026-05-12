@@ -1,4 +1,8 @@
-import { UCDOC_FORMAT, UCDOC_VERSION } from './defaults'
+import {
+  createDefaultUcDocPageSettings,
+  UCDOC_FORMAT,
+  UCDOC_VERSION
+} from './defaults'
 import type { UcDocFile } from './types'
 
 export function isUcDocFile(value: unknown): value is UcDocFile {
@@ -10,12 +14,17 @@ export function isUcDocFile(value: unknown): value is UcDocFile {
 }
 
 export function migrateUcDocFile(doc: UcDocFile): UcDocFile {
-  if (doc.version === UCDOC_VERSION) {
-    return doc
-  }
-
+  const defaultPage = createDefaultUcDocPageSettings()
   return {
     ...doc,
-    version: UCDOC_VERSION
+    version: UCDOC_VERSION,
+    page: {
+      ...defaultPage,
+      ...doc.page,
+      margins: {
+        ...defaultPage.margins,
+        ...doc.page?.margins
+      }
+    }
   }
 }
