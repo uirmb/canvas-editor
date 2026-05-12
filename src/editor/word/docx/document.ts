@@ -5,7 +5,8 @@ import type { IElement } from '../../interface/Element'
 import type { ITd } from '../../interface/table/Td'
 import type { ITr } from '../../interface/table/Tr'
 import type { UcDocFile } from '../../ucdoc'
-import type { DocxImageRelationMap } from './types'
+import { getNumberingReference } from './numbering'
+import type { DocxImageRelationMap, DocxNumberingMap } from './types'
 import { colorToHex, escapeXml, pxToEmu, pxToHalfPoint, pxToTwip } from './xml'
 
 function getTextElementList(doc: UcDocFile): IElement[] {
@@ -101,7 +102,10 @@ function verticalAlignToDocx(value?: VerticalAlign): string | null {
   }
 }
 
-function createParagraphProperties(paragraph: IElement[]): string {
+function createParagraphProperties(
+  paragraph: IElement[],
+  numberingMap: DocxNumberingMap = {}
+): string {
   const first = paragraph[0]
   if (!first) return ''
 
@@ -109,9 +113,13 @@ function createParagraphProperties(paragraph: IElement[]): string {
   const paragraphModel = first.paragraph
   const styleId = first.styleId || paragraphModel?.styleId
   const jc = paragraphModel?.align || rowFlexToJc(first.rowFlex)
+  const numberingReference = getNumberingReference(first, numberingMap)
 
   if (styleId) {
     properties.push(`<w:pStyle w:val="${escapeXml(styleId)}"/>`)
+  }
+  if (numberingReference) {
+    properties.push(`<w:numPr><w:ilvl w:val="${numberingReference.level}"/><w:numId w:val="${numberingReference.numId}"/></w:numPr>`)
   }
   if (jc) {
     properties.push(`<w:jc w:val="${escapeXml(jc)}"/>`)
@@ -166,20 +174,22 @@ function createRun(
 
 function createParagraph(
   paragraph: IElement[],
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
   if (!paragraph.length) {
     return '<w:p/>'
   }
-  return `<w:p>${createParagraphProperties(paragraph)}${paragraph.map(element => createRun(element, imageRelations)).join('')}</w:p>`
+  return `<w:p>${createParagraphProperties(paragraph, numberingMap)}${paragraph.map(element => createRun(element, imageRelations)).join('')}</w:p>`
 }
 
 function createParagraphs(
   elementList: IElement[],
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
   return splitParagraphs(elementList)
-    .map(paragraph => createParagraph(paragraph, imageRelations))
+    .map(paragraph => createParagraph(paragraph, imageRelations, numberingMap))
     .join('')
 }
 
@@ -245,15 +255,17 @@ function createTableCellProperties(td: ITd): string {
 
 function createTableCell(
   td: ITd,
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
-  const content = createParagraphs(td.value || [], imageRelations) || '<w:p/>'
+  const content = createParagraphs(td.value || [], imageRelations, numberingMap) || '<w:p/>'
   return `<w:tc>${createTableCellProperties(td)}${content}</w:tc>`
 }
 
 function createTableRow(
   row: ITr,
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
   const rowProperties: string[] = []
   if (row.height) {
@@ -262,34 +274,36 @@ function createTableRow(
   if (row.pagingRepeat) {
     rowProperties.push('<w:tblHeader/>')
   }
-  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(td => createTableCell(td, imageRelations)).join('')}</w:tr>`
+  return `<w:tr>${rowProperties.length ? `<w:trPr>${rowProperties.join('')}</w:trPr>` : ''}${row.tdList.map(td => createTableCell(td, imageRelations, numberingMap)).join('')}</w:tr>`
 }
 
 function createTable(
   table: IElement,
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
   if (!table.trList?.length) return '<w:p/>'
-  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(row => createTableRow(row, imageRelations)).join('')}</w:tbl>`
+  return `<w:tbl>${createTableProperties(table)}${createTableGrid(table)}${table.trList.map(row => createTableRow(row, imageRelations, numberingMap)).join('')}</w:tbl>`
 }
 
 function createDocumentBlocks(
   elementList: IElement[],
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
   const blocks: string[] = []
   let paragraphBuffer: IElement[] = []
 
   const flushParagraphBuffer = () => {
     if (!paragraphBuffer.length) return
-    blocks.push(createParagraphs(paragraphBuffer, imageRelations))
+    blocks.push(createParagraphs(paragraphBuffer, imageRelations, numberingMap))
     paragraphBuffer = []
   }
 
   elementList.forEach(element => {
     if (element.type === ElementType.TABLE) {
       flushParagraphBuffer()
-      blocks.push(createTable(element, imageRelations))
+      blocks.push(createTable(element, imageRelations, numberingMap))
       return
     }
     paragraphBuffer.push(element)
@@ -306,9 +320,10 @@ function createSectionProperties(doc: UcDocFile): string {
 
 export function createDocumentXml(
   doc: UcDocFile,
-  imageRelations: DocxImageRelationMap = {}
+  imageRelations: DocxImageRelationMap = {},
+  numberingMap: DocxNumberingMap = {}
 ): string {
-  const blocks = createDocumentBlocks(getTextElementList(doc), imageRelations)
+  const blocks = createDocumentBlocks(getTextElementList(doc), imageRelations, numberingMap)
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${blocks}${createSectionProperties(doc)}</w:body></w:document>`
 }
