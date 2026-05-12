@@ -13,7 +13,7 @@ function splitParagraphs(elementList: IElement[]): IElement[][] {
   let current: IElement[] = []
 
   elementList.forEach(element => {
-    if (element.type === ElementType.BREAK || element.value === '\n') {
+    if (element.value === '\n') {
       paragraphs.push(current)
       current = []
       return
@@ -25,7 +25,7 @@ function splitParagraphs(elementList: IElement[]): IElement[][] {
         paragraphs.push(current)
         current = []
       }
-      if (part) {
+      if (part || element.type === ElementType.PAGE_BREAK) {
         current.push({
           ...element,
           value: part
@@ -109,6 +109,9 @@ function createParagraphProperties(paragraph: IElement[]): string {
 }
 
 function createRun(element: IElement): string {
+  if (element.type === ElementType.PAGE_BREAK) {
+    return '<w:r><w:br w:type="page"/></w:r>'
+  }
   return `<w:r>${createRunProperties(element)}<w:t xml:space="preserve">${escapeXml(element.value || '')}</w:t></w:r>`
 }
 
