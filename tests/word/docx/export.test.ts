@@ -14,6 +14,7 @@ describe('basic docx export', () => {
         title: 'Docx Test'
       },
       data: {
+        header: [],
         main: [
           {
             value: 'Hello ',
@@ -40,7 +41,8 @@ describe('basic docx export', () => {
               }
             }
           }
-        ]
+        ],
+        footer: []
       }
     })
 
@@ -62,11 +64,13 @@ describe('basic docx export', () => {
         author: 'uirmb'
       },
       data: {
+        header: [],
         main: [
           {
             value: 'Project Plan'
           }
-        ]
+        ],
+        footer: []
       }
     })
 
