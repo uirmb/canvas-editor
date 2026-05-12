@@ -242,3 +242,4 @@ export type {
 }
 
 export * from './ucdoc'
+export * from './word'
