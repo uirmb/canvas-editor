@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createUcDocFile, migrateUcDocFile } from '../../src/editor/ucdoc'
+import {
+  createUcDocFile,
+  migrateUcDocFile,
+  type UcDocFile
+} from '../../src/editor/ucdoc'
 import {
   createPageSettings,
   toLandscapePageSettings,
@@ -51,7 +55,7 @@ describe('word page settings helpers', () => {
     const legacyDoc = {
       ...doc,
       page: undefined
-    }
+    } as unknown as UcDocFile
 
     const migrated = migrateUcDocFile(legacyDoc)
 
