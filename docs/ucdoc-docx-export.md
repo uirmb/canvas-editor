@@ -1,6 +1,24 @@
 # UcDoc 与 DOCX 导出阶段总结
 
-本文档总结当前 `canvas-editor` 在 UcDoc 原生 JSON 文档格式、在线文档外壳、工具栏控制层，以及 DOCX 导出方面已经完成的阶段能力，并给出基础使用链路。
+本文档总结 `@uirmb/ucdoc-editor` 在 UcDoc 原生 JSON 文档格式、在线文档外壳、工具栏控制层，以及 DOCX 导出方面已经完成的阶段能力，并给出基础使用链路。
+
+## 项目来源与协议
+
+`@uirmb/ucdoc-editor` 基于开源项目 [canvas-editor](https://github.com/Hufe921/canvas-editor) 开发。
+
+原项目：
+
+```txt
+https://github.com/Hufe921/canvas-editor
+```
+
+当前项目：
+
+```txt
+https://github.com/uirmb/canvas-editor
+```
+
+本项目继续使用 MIT 协议发布。原 `canvas-editor` 项目同样使用 MIT 协议。
 
 ## 1. 阶段目标
 
@@ -12,9 +30,17 @@
 - 覆盖 Word 常用场景：文本、段落、样式、表格、图片、列表、页眉页脚、超链接。
 - 不强求完整导入 docx，也不强求 100% 兼容 Word 所有高级格式。
 
-## 2. 已完成能力
+## 2. 安装
 
-### 2.1 UcDoc 原生文档格式
+```bash
+npm install @uirmb/ucdoc-editor
+pnpm add @uirmb/ucdoc-editor
+yarn add @uirmb/ucdoc-editor
+```
+
+## 3. 已完成能力
+
+### 3.1 UcDoc 原生文档格式
 
 已新增 `UcDocFile` 作为在线文档的原生 JSON 格式，包含：
 
@@ -36,12 +62,12 @@ import {
   getEditorResultFromUcDocFile,
   migrateUcDocFile,
   isUcDocFile
-} from '@hufe921/canvas-editor'
+} from '@uirmb/ucdoc-editor'
 ```
 
-### 2.2 UcDocEditorShell
+### 3.2 UcDocEditorShell
 
-已新增 `UcDocEditorShell`，用于把现有 editor 实例包装成文档级 API：
+`UcDocEditorShell` 用于把现有 editor 实例包装成文档级 API：
 
 - `openUcDoc(doc)`
 - `getUcDoc()`
@@ -57,10 +83,10 @@ import {
 相关入口：
 
 ```ts
-import { UcDocEditorShell } from '@hufe921/canvas-editor'
+import { UcDocEditorShell } from '@uirmb/ucdoc-editor'
 ```
 
-### 2.3 WordToolbarController
+### 3.3 WordToolbarController
 
 已新增无 UI 框架依赖的工具栏控制层：
 
@@ -72,10 +98,10 @@ import { UcDocEditorShell } from '@hufe921/canvas-editor'
 相关入口：
 
 ```ts
-import { WordToolbarController } from '@hufe921/canvas-editor'
+import { WordToolbarController } from '@uirmb/ucdoc-editor'
 ```
 
-### 2.4 Word 常用模型增强
+### 3.4 Word 常用模型增强
 
 已在 UcDoc 和元素模型中补充：
 
@@ -107,10 +133,10 @@ import {
   clearTableCellProperties,
   applyImageProperties,
   clearImageProperties
-} from '@hufe921/canvas-editor'
+} from '@uirmb/ucdoc-editor'
 ```
 
-### 2.5 DOCX 导出
+### 3.5 DOCX 导出
 
 已新增 `exportUcDocToDocx`，从 UcDoc 生成 docx 包数据。
 
@@ -122,7 +148,7 @@ import {
   createDocxBlob,
   createDocxObjectUrl,
   revokeDocxObjectUrl
-} from '@hufe921/canvas-editor'
+} from '@uirmb/ucdoc-editor'
 ```
 
 当前 DOCX 导出覆盖：
@@ -139,17 +165,16 @@ import {
 - 外部超链接。
 - 动态 paragraph styles。
 
-## 3. 基础使用链路
+## 4. 基础使用链路
 
-### 3.1 创建 editor 和 shell
+### 4.1 创建 editor 和 shell
 
 ```ts
 import Editor, {
   UcDocEditorShell,
-  createUcDocFile,
   exportUcDocToDocx,
   createDocxBlob
-} from '@hufe921/canvas-editor'
+} from '@uirmb/ucdoc-editor'
 
 const container = document.querySelector<HTMLDivElement>('#editor')!
 
@@ -177,7 +202,7 @@ const shell = new UcDocEditorShell(editor, {
 })
 ```
 
-### 3.2 保存为 UcDoc JSON
+### 4.2 保存为 UcDoc JSON
 
 ```ts
 const doc = await shell.saveUcDoc({
@@ -189,7 +214,7 @@ const doc = await shell.saveUcDoc({
 localStorage.setItem('demo.ucdoc', JSON.stringify(doc))
 ```
 
-### 3.3 打开 UcDoc JSON
+### 4.3 打开 UcDoc JSON
 
 ```ts
 const json = localStorage.getItem('demo.ucdoc')
@@ -201,7 +226,7 @@ if (json) {
 }
 ```
 
-### 3.4 导出 DOCX
+### 4.4 导出 DOCX
 
 ```ts
 const doc = shell.getUcDoc({
@@ -223,55 +248,6 @@ anchor.download = result.fileName
 anchor.click()
 
 URL.revokeObjectURL(url)
-```
-
-## 4. UcDoc 示例结构
-
-```ts
-const doc = createUcDocFile({
-  metadata: {
-    title: 'Project Plan',
-    author: 'uirmb'
-  },
-  page: {
-    paperSize: 'A4',
-    orientation: 'portrait',
-    margins: {
-      top: 96,
-      right: 96,
-      bottom: 96,
-      left: 96
-    }
-  },
-  data: {
-    header: [
-      {
-        value: 'Project Header'
-      }
-    ],
-    main: [
-      {
-        value: 'Project Plan',
-        styleId: 'title',
-        paragraph: {
-          styleId: 'title',
-          align: 'center'
-        }
-      },
-      {
-        value: '\n'
-      },
-      {
-        value: 'This document is saved as UcDoc JSON and exported as DOCX.'
-      }
-    ],
-    footer: [
-      {
-        value: 'Project Footer'
-      }
-    ]
-  }
-})
 ```
 
 ## 5. 与业务系统集成建议
@@ -330,12 +306,11 @@ UcDoc JSON -> exportUcDocToDocx -> Blob / Uint8Array -> download / upload
 
 后续建议按以下方向推进：
 
-1. 增加一个官方 demo 页面，展示保存、打开、导出流程。
-2. 增加导出回归样例和快照测试。
-3. 增强 styles.xml 动态生成能力。
-4. 增强图片浮动/环绕导出。
-5. 增强复杂表格合并导出。
-6. 根据业务需求再考虑轻量 DOCX 导入。
+1. 增加导出回归样例和快照测试。
+2. 增强 styles.xml 动态生成能力。
+3. 增强图片浮动/环绕导出。
+4. 增强复杂表格合并导出。
+5. 根据业务需求再考虑轻量 DOCX 导入。
 
 ## 8. 验证命令
 
