@@ -140,9 +140,9 @@
         createImageAsset,
         addImageAsset,
         exportUcDocToDocx,
-        createDocxBlob
-      } from '../dist/canvas-editor.es.js'
-      import { ElementType } from '../dist/canvas-editor.es.js'
+        createDocxBlob,
+        ElementType
+      } from '../dist/canvas-editor.js'
 
       const statusEl = document.querySelector('#status')
       const jsonEl = document.querySelector('#ucdoc-json')
@@ -178,7 +178,7 @@
         const doc = createUcDocFile({
           metadata: {
             title: 'UcDoc DOCX Export Demo',
-            author: 'canvas-editor'
+            author: 'ucdoc-editor'
           },
           data: {
             header: [
