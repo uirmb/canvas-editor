@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UcDoc Save / Open / DOCX Export Demo</title>
+    <title>UcDoc Editor Demo</title>
     <style>
       * {
         box-sizing: border-box;
@@ -11,17 +11,88 @@
 
       body {
         margin: 0;
+        overflow: hidden;
         font-family:
           -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei',
           sans-serif;
         color: #1f2937;
-        background: #f3f4f6;
+        background: #edf2f7;
       }
 
-      .page {
+      button,
+      select,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .app {
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
+        width: 100vw;
+        height: 100vh;
+        min-width: 1024px;
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 48px;
+        padding: 0 18px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        color: #1d4ed8;
+        background: #ffffff;
+        font-weight: 800;
+      }
+
+      .title-main {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+
+      .title-main strong {
+        overflow: hidden;
+        max-width: 420px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 15px;
+      }
+
+      .title-main span {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12px;
+      }
+
+      .title-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .title-chip {
+        display: inline-flex;
+        align-items: center;
+        height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        color: #dbeafe;
+        background: rgba(255, 255, 255, 0.16);
+        font-size: 12px;
       }
 
       .ribbon {
@@ -123,22 +194,129 @@
         cursor: pointer;
       }
 
-      .status {
-        margin-left: auto;
-        align-self: center;
-        padding: 0 4px 0 12px;
-        color: #6b7280;
-        font-size: 13px;
-        white-space: nowrap;
-      }
-
-      .content {
+      .workbench {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 360px;
-        gap: 12px;
+        grid-template-columns: 230px minmax(0, 1fr) 380px;
         min-height: 0;
         flex: 1;
-        padding: 12px;
+        transition: grid-template-columns 0.2s ease;
+      }
+
+      .app.json-collapsed .workbench {
+        grid-template-columns: 230px minmax(0, 1fr) 44px;
+      }
+
+      .sidebar {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        border-right: 1px solid #dbe3ef;
+        background: #f8fafc;
+      }
+
+      .side-section {
+        padding: 14px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .side-title {
+        margin-bottom: 10px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .outline-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 30px;
+        padding: 0 8px;
+        border-radius: 8px;
+        color: #334155;
+        font-size: 13px;
+      }
+
+      .outline-item.active {
+        color: #1d4ed8;
+        background: #dbeafe;
+        font-weight: 600;
+      }
+
+      .capability-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .capability {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: #475569;
+        font-size: 13px;
+      }
+
+      .capability b {
+        color: #16a34a;
+      }
+
+      .stage-note {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .editor-shell {
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        background: #e5e7eb;
+      }
+
+      .document-tabs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 42px;
+        padding: 0 12px;
+        border-bottom: 1px solid #d1d5db;
+        background: #f8fafc;
+      }
+
+      .doc-tab {
+        display: inline-flex;
+        align-items: center;
+        height: 30px;
+        padding: 0 12px;
+        border: 1px solid #cbd5e1;
+        border-bottom-color: #ffffff;
+        border-radius: 8px 8px 0 0;
+        color: #1d4ed8;
+        background: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .editor-stage {
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+        padding: 22px;
+      }
+
+      .document-frame {
+        max-width: 980px;
+        min-height: 780px;
+        margin: 0 auto;
+        padding: 18px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
       }
 
       #editor {
@@ -149,22 +327,63 @@
         background: #ffffff;
       }
 
-      .panel {
+      .json-panel {
         display: flex;
         min-height: 0;
         flex-direction: column;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
+        border-left: 1px solid #dbe3ef;
         background: #ffffff;
       }
 
-      .panel-title {
-        padding: 12px;
-        border-bottom: 1px solid #e5e7eb;
-        font-weight: 600;
+      .app.json-collapsed .json-panel {
+        overflow: hidden;
       }
 
-      .panel textarea {
+      .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 10px 0 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .panel-header strong {
+        font-size: 13px;
+      }
+
+      .panel-header span {
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .panel-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-left: auto;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        cursor: pointer;
+      }
+
+      .json-body {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+      }
+
+      .app.json-collapsed .json-body,
+      .app.json-collapsed .panel-header strong,
+      .app.json-collapsed .panel-header span {
+        display: none;
+      }
+
+      .json-panel textarea {
         flex: 1;
         min-height: 0;
         width: 100%;
@@ -187,21 +406,53 @@
         line-height: 1.5;
       }
 
-      @media (max-width: 960px) {
-        .content {
+      .statusbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 28px;
+        padding: 0 12px;
+        color: #475569;
+        background: #ffffff;
+        border-top: 1px solid #dbe3ef;
+        font-size: 12px;
+      }
+
+      .statusbar span:last-child {
+        margin-left: auto;
+      }
+
+      @media (max-width: 1180px) {
+        .workbench,
+        .app.json-collapsed .workbench {
           grid-template-columns: 1fr;
         }
 
-        .status {
-          width: 100%;
-          margin-left: 0;
-          padding-top: 6px;
+        .sidebar,
+        .json-panel {
+          display: none;
+        }
+
+        .app {
+          min-width: 0;
         }
       }
     </style>
   </head>
   <body>
-    <div class="page">
+    <div id="app" class="app">
+      <div class="titlebar">
+        <div class="brand">U</div>
+        <div class="title-main">
+          <strong id="doc-title">UcDoc DOCX Export Demo</strong>
+          <span>UcDoc JSON 原生文档格式 · DOCX Export · Word-like Online Editor</span>
+        </div>
+        <div class="title-actions">
+          <span class="title-chip">MIT</span>
+          <span class="title-chip">@uirmb/ucdoc-editor</span>
+        </div>
+      </div>
+
       <div class="ribbon">
         <div class="ribbon-group">
           <div class="ribbon-row">
@@ -264,22 +515,72 @@
           <div class="ribbon-row">
             <button id="toggle-readonly" class="ribbon-button">只读</button>
             <button id="print-doc" class="ribbon-button">打印</button>
+            <button id="toggle-json" class="ribbon-button">JSON 面板</button>
           </div>
           <div class="ribbon-title">视图</div>
         </div>
-
-        <span id="status" class="status">Ready</span>
       </div>
 
-      <div class="content">
-        <div id="editor"></div>
-        <div class="panel">
-          <div class="panel-title">UcDoc JSON</div>
-          <textarea id="ucdoc-json" spellcheck="false"></textarea>
-          <div class="hint">
-            这个示例展示：当前编辑器内容保存为 UcDoc JSON、从 UcDoc JSON 重新打开、再导出为 DOCX。实际业务系统可以把这段 JSON 保存到数据库、对象存储或网盘文件系统。
+      <div class="workbench">
+        <aside class="sidebar">
+          <div class="side-section">
+            <div class="side-title">文档大纲</div>
+            <div class="outline-item active">01  项目标题</div>
+            <div class="outline-item">02  UcDoc JSON</div>
+            <div class="outline-item">03  编号列表</div>
+            <div class="outline-item">04  图片与表格</div>
           </div>
-        </div>
+          <div class="side-section">
+            <div class="side-title">导出能力</div>
+            <div class="capability-list">
+              <div class="capability">文本与段落 <b>OK</b></div>
+              <div class="capability">表格 <b>OK</b></div>
+              <div class="capability">图片 <b>OK</b></div>
+              <div class="capability">编号/列表 <b>OK</b></div>
+              <div class="capability">页眉页脚 <b>OK</b></div>
+              <div class="capability">超链接 <b>OK</b></div>
+            </div>
+          </div>
+          <div class="side-section">
+            <div class="side-title">说明</div>
+            <div class="stage-note">
+              当前 demo 使用 UcDoc JSON 作为源格式，导出时通过 exportUcDocToDocx 生成 DOCX。
+            </div>
+          </div>
+        </aside>
+
+        <main class="editor-shell">
+          <div class="document-tabs">
+            <div class="doc-tab">UcDoc DOCX Export Demo.ucdoc</div>
+          </div>
+          <div class="editor-stage">
+            <div class="document-frame">
+              <div id="editor"></div>
+            </div>
+          </div>
+        </main>
+
+        <aside class="json-panel">
+          <div class="panel-header">
+            <strong>UcDoc JSON</strong>
+            <span>源文档数据</span>
+            <button id="collapse-json" class="panel-toggle" title="折叠/展开 JSON 面板">⇆</button>
+          </div>
+          <div class="json-body">
+            <textarea id="ucdoc-json" spellcheck="false"></textarea>
+            <div class="hint">
+              可以保存当前编辑器内容为 UcDoc JSON，也可以修改后重新打开。实际业务系统可把这段 JSON 存到数据库、对象存储或网盘文件系统。
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="statusbar">
+        <span id="status">Ready</span>
+        <span id="word-count">字数：0</span>
+        <span>格式：UcDoc JSON</span>
+        <span>导出：DOCX</span>
+        <span id="readonly-status">编辑模式</span>
       </div>
     </div>
 
@@ -294,13 +595,24 @@
         ElementType
       } from '../dist/canvas-editor.js'
 
+      const appEl = document.querySelector('#app')
       const statusEl = document.querySelector('#status')
+      const wordCountEl = document.querySelector('#word-count')
+      const readonlyStatusEl = document.querySelector('#readonly-status')
       const jsonEl = document.querySelector('#ucdoc-json')
       const editorEl = document.querySelector('#editor')
       let readonly = false
 
       function setStatus(message) {
         statusEl.textContent = message
+      }
+
+      function updateWordCount(doc) {
+        const text = (doc?.data?.main || [])
+          .map(item => String(item.value || ''))
+          .join('')
+          .replace(/\s/g, '')
+        wordCountEl.textContent = `字数：${text.length}`
       }
 
       function downloadBlob(blob, fileName) {
@@ -345,11 +657,7 @@
             author: 'ucdoc-editor'
           },
           data: {
-            header: [
-              {
-                value: 'UcDoc Demo Header'
-              }
-            ],
+            header: [{ value: 'UcDoc Demo Header' }],
             main: [
               {
                 value: 'UcDoc DOCX Export Demo',
@@ -359,62 +667,36 @@
                 paragraph: {
                   styleId: 'title',
                   align: 'center',
-                  spacing: {
-                    after: 12
-                  }
+                  spacing: { after: 12 }
                 }
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 value:
                   '这是一个 UcDoc 原生 JSON 文档示例。业务系统可以保存 JSON，用户需要时再导出 DOCX。'
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 value: '第一项：保存 UcDoc JSON',
-                numbering: {
-                  numId: 'demo-list',
-                  level: 0,
-                  format: 'decimal'
-                }
+                numbering: { numId: 'demo-list', level: 0, format: 'decimal' }
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 value: '第二项：打开 UcDoc JSON',
-                numbering: {
-                  numId: 'demo-list',
-                  level: 0,
-                  format: 'decimal'
-                }
+                numbering: { numId: 'demo-list', level: 0, format: 'decimal' }
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 value: '第三项：导出 DOCX',
-                numbering: {
-                  numId: 'demo-list',
-                  level: 0,
-                  format: 'decimal'
-                }
+                numbering: { numId: 'demo-list', level: 0, format: 'decimal' }
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 type: ElementType.HYPERLINK,
                 value: 'canvas-editor GitHub',
                 url: 'https://github.com/Hufe921/canvas-editor'
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 type: ElementType.IMAGE,
                 value: '',
@@ -426,9 +708,7 @@
                   caption: 'Demo Image'
                 }
               },
-              {
-                value: '\n'
-              },
+              { value: '\n' },
               {
                 type: ElementType.TABLE,
                 value: '',
@@ -452,9 +732,7 @@
                           {
                             value: '字段',
                             bold: true,
-                            tableCellProperties: {
-                              backgroundColor: '#eeeeee'
-                            }
+                            tableCellProperties: { backgroundColor: '#eeeeee' }
                           }
                         ]
                       },
@@ -466,9 +744,7 @@
                           {
                             value: '说明',
                             bold: true,
-                            tableCellProperties: {
-                              backgroundColor: '#eeeeee'
-                            }
+                            tableCellProperties: { backgroundColor: '#eeeeee' }
                           }
                         ]
                       }
@@ -481,21 +757,13 @@
                         colspan: 1,
                         rowspan: 1,
                         width: 160,
-                        value: [
-                          {
-                            value: '源格式'
-                          }
-                        ]
+                        value: [{ value: '源格式' }]
                       },
                       {
                         colspan: 1,
                         rowspan: 1,
                         width: 240,
-                        value: [
-                          {
-                            value: 'UcDoc JSON'
-                          }
-                        ]
+                        value: [{ value: 'UcDoc JSON' }]
                       }
                     ]
                   },
@@ -506,32 +774,20 @@
                         colspan: 1,
                         rowspan: 1,
                         width: 160,
-                        value: [
-                          {
-                            value: '导出格式'
-                          }
-                        ]
+                        value: [{ value: '导出格式' }]
                       },
                       {
                         colspan: 1,
                         rowspan: 1,
                         width: 240,
-                        value: [
-                          {
-                            value: 'DOCX'
-                          }
-                        ]
+                        value: [{ value: 'DOCX' }]
                       }
                     ]
                   }
                 ]
               }
             ],
-            footer: [
-              {
-                value: 'UcDoc Demo Footer'
-              }
-            ]
+            footer: [{ value: 'UcDoc Demo Footer' }]
           }
         })
 
@@ -554,44 +810,34 @@
       })
 
       jsonEl.value = JSON.stringify(initialDoc, null, 2)
+      updateWordCount(initialDoc)
 
       document.querySelector('#save-json').addEventListener('click', async () => {
-        const doc = await shell.saveUcDoc({
-          metadata: {
-            title: 'UcDoc DOCX Export Demo'
-          }
-        })
+        const doc = await shell.saveUcDoc({ metadata: { title: 'UcDoc DOCX Export Demo' } })
         jsonEl.value = JSON.stringify(doc, null, 2)
+        updateWordCount(doc)
         setStatus('UcDoc JSON saved')
       })
 
       document.querySelector('#open-json').addEventListener('click', () => {
         const doc = JSON.parse(jsonEl.value)
-        shell.openUcDoc(doc, {
-          applyOptions: true
-        })
+        shell.openUcDoc(doc, { applyOptions: true })
+        updateWordCount(doc)
         setStatus('UcDoc JSON opened')
       })
 
       document.querySelector('#export-docx').addEventListener('click', () => {
-        const doc = shell.getUcDoc({
-          metadata: {
-            title: 'UcDoc DOCX Export Demo'
-          }
-        })
-        const result = exportUcDocToDocx(doc, {
-          fileName: 'ucdoc-docx-export-demo.docx'
-        })
+        const doc = shell.getUcDoc({ metadata: { title: 'UcDoc DOCX Export Demo' } })
+        const result = exportUcDocToDocx(doc, { fileName: 'ucdoc-docx-export-demo.docx' })
         downloadBlob(createDocxBlob(result), result.fileName)
         setStatus('DOCX exported')
       })
 
       document.querySelector('#reset-demo').addEventListener('click', () => {
         const doc = createDemoDoc()
-        shell.openUcDoc(doc, {
-          applyOptions: true
-        })
+        shell.openUcDoc(doc, { applyOptions: true })
         jsonEl.value = JSON.stringify(doc, null, 2)
+        updateWordCount(doc)
         setStatus('Demo reset')
       })
 
@@ -604,12 +850,7 @@
           if (command === 'underline') callCommand(['executeUnderline'])
           if (command === 'title') callCommand(['executeTitle'], Number(value))
           if (command === 'align') callCommand(['executeRowFlex'], value)
-          if (command === 'list') {
-            callCommand(
-              ['executeList', 'executeListType'],
-              value === 'ul' ? 'ul' : 'ol'
-            )
-          }
+          if (command === 'list') callCommand(['executeList', 'executeListType'], value === 'ul' ? 'ul' : 'ol')
         })
       })
 
@@ -643,16 +884,14 @@
 
       document.querySelector('#insert-page-break').addEventListener('click', () => {
         callCommand(['executePageBreak', 'executeInsertElementList'], [
-          {
-            type: ElementType.PAGE_BREAK,
-            value: ''
-          }
+          { type: ElementType.PAGE_BREAK, value: '' }
         ])
       })
 
       document.querySelector('#toggle-readonly').addEventListener('click', () => {
         readonly = !readonly
         shell.setReadonly(readonly)
+        readonlyStatusEl.textContent = readonly ? '只读模式' : '编辑模式'
         setStatus(readonly ? 'Readonly mode' : 'Edit mode')
       })
 
@@ -660,6 +899,13 @@
         shell.print()
         setStatus('Print requested')
       })
+
+      function toggleJsonPanel() {
+        appEl.classList.toggle('json-collapsed')
+      }
+
+      document.querySelector('#toggle-json').addEventListener('click', toggleJsonPanel)
+      document.querySelector('#collapse-json').addEventListener('click', toggleJsonPanel)
     </script>
   </body>
 </html>
