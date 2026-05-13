@@ -1,9 +1,9 @@
 {
-  "name": "@hufe921/canvas-editor",
-  "author": "Hufe",
+  "name": "@uirmb/ucdoc-editor",
+  "author": "uirmb",
   "license": "MIT",
-  "version": "0.9.133",
-  "description": "A Canvas/SVG-based rich text editor",
+  "version": "0.10.0",
+  "description": "A UcDoc JSON-based Word-like document editor with DOCX export, based on canvas-editor",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
@@ -18,16 +18,19 @@
   "typings": "./dist/src/editor/index.d.ts",
   "main": "./dist/canvas-editor.umd.cjs",
   "module": "./dist/canvas-editor.js",
-  "homepage": "https://github.com/Hufe921/canvas-editor",
+  "homepage": "https://github.com/uirmb/canvas-editor",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Hufe921/canvas-editor.git"
+    "url": "https://github.com/uirmb/canvas-editor.git"
   },
   "keywords": [
+    "ucdoc",
+    "ucdoc-editor",
     "canvas-editor",
-    "editor",
-    "wysiwyg",
-    "emr"
+    "docx",
+    "word-editor",
+    "document-editor",
+    "wysiwyg"
   ],
   "engines": {
     "node": ">=24.13.1"
