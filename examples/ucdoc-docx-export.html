@@ -24,35 +24,112 @@
         min-height: 100vh;
       }
 
-      .toolbar {
+      .ribbon {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 16px;
-        background: #ffffff;
-        border-bottom: 1px solid #e5e7eb;
+        align-items: stretch;
+        gap: 0;
+        padding: 8px 12px 6px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border-bottom: 1px solid #dbe3ef;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
       }
 
-      .toolbar button {
-        height: 32px;
-        padding: 0 12px;
-        border: 1px solid #d1d5db;
+      .ribbon-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 96px;
+        padding: 0 10px 4px;
+        border-right: 1px solid #e5e7eb;
+      }
+
+      .ribbon-group:first-child {
+        padding-left: 0;
+      }
+
+      .ribbon-group:last-child {
+        border-right: 0;
+      }
+
+      .ribbon-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+      }
+
+      .ribbon-title {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1;
+        text-align: center;
+        user-select: none;
+      }
+
+      .ribbon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-width: 32px;
+        height: 30px;
+        padding: 0 8px;
+        border: 1px solid transparent;
         border-radius: 6px;
         color: #111827;
+        background: transparent;
+        cursor: pointer;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .ribbon-button:hover {
+        border-color: #cbd5e1;
+        background: #ffffff;
+      }
+
+      .ribbon-button.primary {
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+        background: #eff6ff;
+      }
+
+      .ribbon-button.icon {
+        width: 32px;
+        padding: 0;
+        font-weight: 700;
+      }
+
+      .ribbon-select {
+        height: 30px;
+        min-width: 92px;
+        padding: 0 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        color: #111827;
+        background: #ffffff;
+        font-size: 13px;
+      }
+
+      .ribbon-color {
+        width: 34px;
+        height: 30px;
+        padding: 2px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
         background: #ffffff;
         cursor: pointer;
       }
 
-      .toolbar button:hover {
-        background: #f9fafb;
-      }
-
       .status {
         margin-left: auto;
+        align-self: center;
+        padding: 0 4px 0 12px;
         color: #6b7280;
         font-size: 13px;
+        white-space: nowrap;
       }
 
       .content {
@@ -109,15 +186,88 @@
         font-size: 12px;
         line-height: 1.5;
       }
+
+      @media (max-width: 960px) {
+        .content {
+          grid-template-columns: 1fr;
+        }
+
+        .status {
+          width: 100%;
+          margin-left: 0;
+          padding-top: 6px;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="page">
-      <div class="toolbar">
-        <button id="save-json">保存 UcDoc JSON</button>
-        <button id="open-json">打开 UcDoc JSON</button>
-        <button id="export-docx">导出 DOCX</button>
-        <button id="reset-demo">重置示例内容</button>
+      <div class="ribbon">
+        <div class="ribbon-group">
+          <div class="ribbon-row">
+            <button id="save-json" class="ribbon-button primary">保存 JSON</button>
+            <button id="open-json" class="ribbon-button">打开 JSON</button>
+            <button id="export-docx" class="ribbon-button primary">导出 DOCX</button>
+            <button id="reset-demo" class="ribbon-button">重置</button>
+          </div>
+          <div class="ribbon-title">文件</div>
+        </div>
+
+        <div class="ribbon-group">
+          <div class="ribbon-row">
+            <select id="font-family" class="ribbon-select" title="字体">
+              <option value="Microsoft YaHei">微软雅黑</option>
+              <option value="SimSun">宋体</option>
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times</option>
+            </select>
+            <select id="font-size" class="ribbon-select" title="字号">
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="24">24</option>
+              <option value="32">32</option>
+            </select>
+            <button data-command="bold" class="ribbon-button icon" title="加粗">B</button>
+            <button data-command="italic" class="ribbon-button icon" title="斜体"><em>I</em></button>
+            <button data-command="underline" class="ribbon-button icon" title="下划线"><u>U</u></button>
+            <input id="font-color" class="ribbon-color" type="color" value="#111827" title="字体颜色" />
+            <input id="highlight-color" class="ribbon-color" type="color" value="#fff59d" title="高亮" />
+          </div>
+          <div class="ribbon-title">字体</div>
+        </div>
+
+        <div class="ribbon-group">
+          <div class="ribbon-row">
+            <button data-command="title" data-value="1" class="ribbon-button">标题 1</button>
+            <button data-command="align" data-value="left" class="ribbon-button">左对齐</button>
+            <button data-command="align" data-value="center" class="ribbon-button">居中</button>
+            <button data-command="align" data-value="right" class="ribbon-button">右对齐</button>
+            <button data-command="list" data-value="ol" class="ribbon-button">编号</button>
+            <button data-command="list" data-value="ul" class="ribbon-button">项目符号</button>
+          </div>
+          <div class="ribbon-title">段落</div>
+        </div>
+
+        <div class="ribbon-group">
+          <div class="ribbon-row">
+            <button id="insert-link" class="ribbon-button">超链接</button>
+            <button id="insert-image" class="ribbon-button">图片</button>
+            <button id="insert-table" class="ribbon-button">表格</button>
+            <button id="insert-page-break" class="ribbon-button">分页符</button>
+          </div>
+          <div class="ribbon-title">插入</div>
+        </div>
+
+        <div class="ribbon-group">
+          <div class="ribbon-row">
+            <button id="toggle-readonly" class="ribbon-button">只读</button>
+            <button id="print-doc" class="ribbon-button">打印</button>
+          </div>
+          <div class="ribbon-title">视图</div>
+        </div>
+
         <span id="status" class="status">Ready</span>
       </div>
 
@@ -147,6 +297,7 @@
       const statusEl = document.querySelector('#status')
       const jsonEl = document.querySelector('#ucdoc-json')
       const editorEl = document.querySelector('#editor')
+      let readonly = false
 
       function setStatus(message) {
         statusEl.textContent = message
@@ -162,6 +313,19 @@
         anchor.click()
         document.body.removeChild(anchor)
         URL.revokeObjectURL(url)
+      }
+
+      function callCommand(names, ...args) {
+        const command = editor.command || {}
+        const commandNames = Array.isArray(names) ? names : [names]
+        const name = commandNames.find(item => typeof command[item] === 'function')
+        if (!name) {
+          setStatus(`当前构建未暴露命令：${commandNames.join(' / ')}`)
+          return false
+        }
+        command[name](...args)
+        setStatus(`已执行：${name}`)
+        return true
       }
 
       function createDemoDoc() {
@@ -429,6 +593,72 @@
         })
         jsonEl.value = JSON.stringify(doc, null, 2)
         setStatus('Demo reset')
+      })
+
+      document.querySelectorAll('[data-command]').forEach(button => {
+        button.addEventListener('click', () => {
+          const command = button.dataset.command
+          const value = button.dataset.value
+          if (command === 'bold') callCommand(['executeBold'])
+          if (command === 'italic') callCommand(['executeItalic'])
+          if (command === 'underline') callCommand(['executeUnderline'])
+          if (command === 'title') callCommand(['executeTitle'], Number(value))
+          if (command === 'align') callCommand(['executeRowFlex'], value)
+          if (command === 'list') {
+            callCommand(
+              ['executeList', 'executeListType'],
+              value === 'ul' ? 'ul' : 'ol'
+            )
+          }
+        })
+      })
+
+      document.querySelector('#font-family').addEventListener('change', event => {
+        callCommand(['executeFont'], event.target.value)
+      })
+
+      document.querySelector('#font-size').addEventListener('change', event => {
+        callCommand(['executeSize'], Number(event.target.value))
+      })
+
+      document.querySelector('#font-color').addEventListener('change', event => {
+        callCommand(['executeColor'], event.target.value)
+      })
+
+      document.querySelector('#highlight-color').addEventListener('change', event => {
+        callCommand(['executeHighlight'], event.target.value)
+      })
+
+      document.querySelector('#insert-link').addEventListener('click', () => {
+        callCommand(['executeHyperlink'], 'https://github.com/uirmb/ucdoc-editor')
+      })
+
+      document.querySelector('#insert-image').addEventListener('click', () => {
+        setStatus('图片插入通常需要文件选择器，本 demo 已在示例内容中包含图片。')
+      })
+
+      document.querySelector('#insert-table').addEventListener('click', () => {
+        callCommand(['executeInsertTable', 'executeTable'], 3, 3)
+      })
+
+      document.querySelector('#insert-page-break').addEventListener('click', () => {
+        callCommand(['executePageBreak', 'executeInsertElementList'], [
+          {
+            type: ElementType.PAGE_BREAK,
+            value: ''
+          }
+        ])
+      })
+
+      document.querySelector('#toggle-readonly').addEventListener('click', () => {
+        readonly = !readonly
+        shell.setReadonly(readonly)
+        setStatus(readonly ? 'Readonly mode' : 'Edit mode')
+      })
+
+      document.querySelector('#print-doc').addEventListener('click', () => {
+        shell.print()
+        setStatus('Print requested')
       })
     </script>
   </body>
