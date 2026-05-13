@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UcDoc Save / Open / DOCX Export Demo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei',
+          sans-serif;
+        color: #1f2937;
+        background: #f3f4f6;
+      }
+
+      .page {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      }
+
+      .toolbar button {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        color: #111827;
+        background: #ffffff;
+        cursor: pointer;
+      }
+
+      .toolbar button:hover {
+        background: #f9fafb;
+      }
+
+      .status {
+        margin-left: auto;
+        color: #6b7280;
+        font-size: 13px;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 12px;
+        min-height: 0;
+        flex: 1;
+        padding: 12px;
+      }
+
+      #editor {
+        min-height: 720px;
+        overflow: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+      }
+
+      .panel {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+      }
+
+      .panel-title {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 600;
+      }
+
+      .panel textarea {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        padding: 12px;
+        border: 0;
+        outline: none;
+        resize: none;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          'Liberation Mono', monospace;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .hint {
+        padding: 8px 12px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="toolbar">
+        <button id="save-json">保存 UcDoc JSON</button>
+        <button id="open-json">打开 UcDoc JSON</button>
+        <button id="export-docx">导出 DOCX</button>
+        <button id="reset-demo">重置示例内容</button>
+        <span id="status" class="status">Ready</span>
+      </div>
+
+      <div class="content">
+        <div id="editor"></div>
+        <div class="panel">
+          <div class="panel-title">UcDoc JSON</div>
+          <textarea id="ucdoc-json" spellcheck="false"></textarea>
+          <div class="hint">
+            这个示例展示：当前编辑器内容保存为 UcDoc JSON、从 UcDoc JSON 重新打开、再导出为 DOCX。实际业务系统可以把这段 JSON 保存到数据库、对象存储或网盘文件系统。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import Editor, {
+        UcDocEditorShell,
+        createUcDocFile,
+        createImageAsset,
+        addImageAsset,
+        exportUcDocToDocx,
+        createDocxBlob
+      } from '../dist/canvas-editor.es.js'
+      import { ElementType } from '../dist/canvas-editor.es.js'
+
+      const statusEl = document.querySelector('#status')
+      const jsonEl = document.querySelector('#ucdoc-json')
+      const editorEl = document.querySelector('#editor')
+
+      function setStatus(message) {
+        statusEl.textContent = message
+      }
+
+      function downloadBlob(blob, fileName) {
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = fileName
+        anchor.style.display = 'none'
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
+        URL.revokeObjectURL(url)
+      }
+
+      function createDemoDoc() {
+        const imageAsset = createImageAsset({
+          id: 'image-logo',
+          name: 'demo.png',
+          mimeType: 'image/png',
+          width: 80,
+          height: 80,
+          base64:
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lHTB9QAAAABJRU5ErkJggg=='
+        })
+
+        const doc = createUcDocFile({
+          metadata: {
+            title: 'UcDoc DOCX Export Demo',
+            author: 'canvas-editor'
+          },
+          data: {
+            header: [
+              {
+                value: 'UcDoc Demo Header'
+              }
+            ],
+            main: [
+              {
+                value: 'UcDoc DOCX Export Demo',
+                bold: true,
+                size: 24,
+                styleId: 'title',
+                paragraph: {
+                  styleId: 'title',
+                  align: 'center',
+                  spacing: {
+                    after: 12
+                  }
+                }
+              },
+              {
+                value: '\n'
+              },
+              {
+                value:
+                  '这是一个 UcDoc 原生 JSON 文档示例。业务系统可以保存 JSON，用户需要时再导出 DOCX。'
+              },
+              {
+                value: '\n'
+              },
+              {
+                value: '第一项：保存 UcDoc JSON',
+                numbering: {
+                  numId: 'demo-list',
+                  level: 0,
+                  format: 'decimal'
+                }
+              },
+              {
+                value: '\n'
+              },
+              {
+                value: '第二项：打开 UcDoc JSON',
+                numbering: {
+                  numId: 'demo-list',
+                  level: 0,
+                  format: 'decimal'
+                }
+              },
+              {
+                value: '\n'
+              },
+              {
+                value: '第三项：导出 DOCX',
+                numbering: {
+                  numId: 'demo-list',
+                  level: 0,
+                  format: 'decimal'
+                }
+              },
+              {
+                value: '\n'
+              },
+              {
+                type: ElementType.HYPERLINK,
+                value: 'canvas-editor GitHub',
+                url: 'https://github.com/Hufe921/canvas-editor'
+              },
+              {
+                value: '\n'
+              },
+              {
+                type: ElementType.IMAGE,
+                value: '',
+                width: 80,
+                height: 80,
+                imageProperties: {
+                  assetId: 'image-logo',
+                  altText: 'demo image',
+                  caption: 'Demo Image'
+                }
+              },
+              {
+                value: '\n'
+              },
+              {
+                type: ElementType.TABLE,
+                value: '',
+                colgroup: [{ width: 160 }, { width: 240 }],
+                tableProperties: {
+                  styleId: 'defaultTable',
+                  width: 400,
+                  widthType: 'fixed',
+                  layout: 'fixed'
+                },
+                trList: [
+                  {
+                    height: 32,
+                    pagingRepeat: true,
+                    tdList: [
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 160,
+                        value: [
+                          {
+                            value: '字段',
+                            bold: true,
+                            tableCellProperties: {
+                              backgroundColor: '#eeeeee'
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 240,
+                        value: [
+                          {
+                            value: '说明',
+                            bold: true,
+                            tableCellProperties: {
+                              backgroundColor: '#eeeeee'
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    height: 32,
+                    tdList: [
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 160,
+                        value: [
+                          {
+                            value: '源格式'
+                          }
+                        ]
+                      },
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 240,
+                        value: [
+                          {
+                            value: 'UcDoc JSON'
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    height: 32,
+                    tdList: [
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 160,
+                        value: [
+                          {
+                            value: '导出格式'
+                          }
+                        ]
+                      },
+                      {
+                        colspan: 1,
+                        rowspan: 1,
+                        width: 240,
+                        value: [
+                          {
+                            value: 'DOCX'
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            footer: [
+              {
+                value: 'UcDoc Demo Footer'
+              }
+            ]
+          }
+        })
+
+        return {
+          ...doc,
+          assets: addImageAsset(doc.assets, imageAsset)
+        }
+      }
+
+      const initialDoc = createDemoDoc()
+      const editor = new Editor(editorEl, initialDoc.data, initialDoc.options)
+      const shell = new UcDocEditorShell(editor, {
+        initialDoc,
+        onDirtyChange(dirty) {
+          setStatus(dirty ? 'Unsaved changes' : 'Saved')
+        },
+        async onSave(doc) {
+          localStorage.setItem('ucdoc-demo', JSON.stringify(doc))
+        }
+      })
+
+      jsonEl.value = JSON.stringify(initialDoc, null, 2)
+
+      document.querySelector('#save-json').addEventListener('click', async () => {
+        const doc = await shell.saveUcDoc({
+          metadata: {
+            title: 'UcDoc DOCX Export Demo'
+          }
+        })
+        jsonEl.value = JSON.stringify(doc, null, 2)
+        setStatus('UcDoc JSON saved')
+      })
+
+      document.querySelector('#open-json').addEventListener('click', () => {
+        const doc = JSON.parse(jsonEl.value)
+        shell.openUcDoc(doc, {
+          applyOptions: true
+        })
+        setStatus('UcDoc JSON opened')
+      })
+
+      document.querySelector('#export-docx').addEventListener('click', () => {
+        const doc = shell.getUcDoc({
+          metadata: {
+            title: 'UcDoc DOCX Export Demo'
+          }
+        })
+        const result = exportUcDocToDocx(doc, {
+          fileName: 'ucdoc-docx-export-demo.docx'
+        })
+        downloadBlob(createDocxBlob(result), result.fileName)
+        setStatus('DOCX exported')
+      })
+
+      document.querySelector('#reset-demo').addEventListener('click', () => {
+        const doc = createDemoDoc()
+        shell.openUcDoc(doc, {
+          applyOptions: true
+        })
+        jsonEl.value = JSON.stringify(doc, null, 2)
+        setStatus('Demo reset')
+      })
+    </script>
+  </body>
+</html>
