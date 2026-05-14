@@ -13,15 +13,16 @@
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
+    "NOTICE.md",
     "package.json"
   ],
   "typings": "./dist/src/editor/index.d.ts",
-  "main": "./dist/canvas-editor.umd.cjs",
-  "module": "./dist/canvas-editor.js",
-  "homepage": "https://github.com/uirmb/canvas-editor",
+  "main": "./dist/ucdoc-editor.umd.cjs",
+  "module": "./dist/ucdoc-editor.js",
+  "homepage": "https://github.com/uirmb/ucdoc-editor",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uirmb/canvas-editor.git"
+    "url": "https://github.com/uirmb/ucdoc-editor.git"
   },
   "keywords": [
     "ucdoc",
