@@ -50,7 +50,7 @@ https://uirmb.github.io/ucdoc-editor/examples/ucdoc-docx-export.html
 The demo imports the built ESM file from:
 
 ```txt
-../dist/canvas-editor.js
+../dist/ucdoc-editor.js
 ```
 
 Therefore the workflow must build the library and publish `dist/` together with `examples/`.
