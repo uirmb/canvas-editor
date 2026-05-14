@@ -5,7 +5,7 @@ import * as path from 'path'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig(({ mode }) => {
-  const name = 'canvas-editor'
+  const name = 'ucdoc-editor'
   const resolve = {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
